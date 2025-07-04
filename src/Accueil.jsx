@@ -1,13 +1,18 @@
-// Ceci est le fichier Accueil.jsx
+// Accueil.jsx
 import { useState, useEffect } from "react";
 import Login from "./Login";
+import AdminInterface from "./AdminInterface";
+import Conducteur from "./Conducteur";
+import CarteTrajets from "./CarteTrajets"; 
 
 export default function Accueil() {
   const [showLogin, setShowLogin] = useState(false);
-  const [mode, setMode] = useState("login"); // login or register
+  const [mode, setMode] = useState("login");
   const [title, setTitle] = useState("");
   const [showApropos, setShowApropos] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [showConducteur, setShowConducteur] = useState(false);
 
   const fullTitle = "Plateforme de Covoiturage Étudiant";
 
@@ -21,8 +26,25 @@ export default function Accueil() {
     return () => clearInterval(interval);
   }, []);
 
+  if (showAdmin) return <AdminInterface />;
+  if (showConducteur) return <Conducteur />;
+
   return (
     <section className="relative min-h-screen overflow-hidden">
+      {/* Bouton caché Admin */}
+      <button
+        className="absolute top-0 left-0 w-4 h-4 opacity-0 hover:opacity-30 z-50 bg-green-600"
+        onClick={() => setShowAdmin(true)}
+        title="Zone secrète admin"
+      ></button>
+
+      {/* Bouton caché Conducteur */}
+      <button
+        className="absolute top-0 left-4 w-4 h-4 opacity-0 hover:opacity-30 z-50 bg-blue-600"
+        onClick={() => setShowConducteur(true)}
+        title="Zone secrète conducteur"
+      ></button>
+
       {/* NAVBAR */}
       <nav className="relative z-20 w-full flex justify-between items-center px-6 md:px-16 py-4 bg-gradient-to-r from-green-600 via-teal-600 to-green-600 text-white">
         <div className="text-white text-xl font-bold cursor-pointer">Covoiturage+</div>
@@ -102,6 +124,11 @@ export default function Accueil() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ✅ Intégration de la carte des trajets */}
+      <div className="relative z-10 px-6 md:px-16 py-10">
+        <CarteTrajets />
       </div>
 
       {/* MODALS */}
