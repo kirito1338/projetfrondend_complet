@@ -1,13 +1,87 @@
-// Ceci est le fichier Login.jsx
 import { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
-export default function Login({ mode, onClose }) {
+
+export default function Login({ mode, onClose, onLoginSuccess }) {
+  const navigate = useNavigate();
   const [role, setRole] = useState("student");
   const [currentMode, setCurrentMode] = useState(mode);
+  const [formData, setFormData] = useState({
+    prenom: "",
+    nom: "",
+    email: "",
+    telephone: "",
+    mot_de_passe: "",
+    numero_etudiant: "",
+    role: "student"
+  });
+  const [loginData, setLoginData] = useState({
+    email: "",
+    mot_de_passe: ""
+  });
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setCurrentMode(mode);
   }, [mode]);
+
+  const handleRegisterChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      role: role
+    }));
+  };
+   const handleLoginSuccess = (userData) => {
+    onLoginSuccess(userData); // on prévient le parent
+    if(userData.role === "admin") {
+      navigate("/admin");
+    } else if(userData.role === "driver") {
+      navigate("/conducteur");
+    } else {
+      navigate("/"); // page utilisateur standard
+    }
+  };
+
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLoginData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("http://localhost:8000/register", formData);
+      console.log("Registration successful:", response.data);
+      setCurrentMode("login"); // Switch to login after successful registration
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Erreur lors de l'inscription");
+      console.error("Registration error:", err);
+    }
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("http://localhost:8000/login", loginData);
+      console.log("Login successful:", response.data);
+      localStorage.setItem("token", response.data.access_token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      onLoginSuccess(response.data.user);
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Email ou mot de passe incorrect");
+      console.error("Login error:", err);
+    }
+  };
 
   return (
     <section
@@ -16,18 +90,22 @@ export default function Login({ mode, onClose }) {
     >
       <div className="absolute inset-0 bg-black bg-opacity-70"></div>
       <div className="relative z-10 w-full max-w-md bg-white bg-opacity-90 p-6 rounded-xl shadow-xl max-h-[90vh] overflow-y-auto">
+        {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">{error}</div>}
+        
         {currentMode === "register" ? (
-          <>
+          <form onSubmit={handleRegisterSubmit}>
             <div className="mb-6">
               <p className="font-semibold mb-2">Je suis :</p>
               <div className="flex gap-4">
                 <button
+                  type="button"
                   className={`px-4 py-2 rounded ${role === "student" ? "bg-green-500 text-white" : "bg-gray-200"}`}
                   onClick={() => setRole("student")}
                 >
                   Étudiant
                 </button>
                 <button
+                  type="button"
                   className={`px-4 py-2 rounded ${role === "driver" ? "bg-green-500 text-white" : "bg-gray-200"}`}
                   onClick={() => setRole("driver")}
                 >
@@ -38,47 +116,199 @@ export default function Login({ mode, onClose }) {
 
             {role === "student" && (
               <>
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Prénom" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Nom" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Numéro étudiant" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Téléphone" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Adresse Email" />
-                <input className="w-full mb-4 p-2 border rounded" type="password" placeholder="Mot de passe" />
+                <input 
+                  name="prenom"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Prénom" 
+                  value={formData.prenom}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="nom"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Nom" 
+                  value={formData.nom}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="numero_etudiant"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Numéro étudiant" 
+                  value={formData.numero_etudiant}
+                  onChange={handleRegisterChange}
+                  required={role === "student"}
+                />
+                <input 
+                  name="telephone"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Téléphone" 
+                  value={formData.telephone}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="email"
+                  type="email"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Adresse Email" 
+                  value={formData.email}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="mot_de_passe"
+                  type="password"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Mot de passe" 
+                  value={formData.mot_de_passe}
+                  onChange={handleRegisterChange}
+                  required
+                />
               </>
             )}
 
             {role === "driver" && (
               <>
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Prénom" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Nom" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Téléphone" />
-                <input className="w-full mb-4 p-2 border rounded" placeholder="Adresse Email" />
+                <input 
+                  name="prenom"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Prénom" 
+                  value={formData.prenom}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="nom"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Nom" 
+                  value={formData.nom}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="telephone"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Téléphone" 
+                  value={formData.telephone}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="email"
+                  type="email"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Adresse Email" 
+                  value={formData.email}
+                  onChange={handleRegisterChange}
+                  required
+                />
+                <input 
+                  name="mot_de_passe"
+                  type="password"
+                  className="w-full mb-4 p-2 border rounded" 
+                  placeholder="Mot de passe" 
+                  value={formData.mot_de_passe}
+                  onChange={handleRegisterChange}
+                  required
+                />
               </>
             )}
 
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded">
+            <button 
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded"
+            >
               S'inscrire
             </button>
+            <div className="text-sm mb-4 text-center">
+            <span>Ou s'inscrire avec</span>
+        <div className="flex justify-center gap-4 mt-2">
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              const token = credentialResponse.credential;
+              const decoded = jwtDecode(token);
+              console.log("Google user decoded (register):", decoded);
+
+              axios.post("http://localhost:8000/login/google", { token })
+                .then((res) => {
+                  localStorage.setItem("token", res.data.access_token);
+                  localStorage.setItem("user", JSON.stringify(res.data.user));
+                  handleLoginSuccess(res.data.user);
+                  onClose();
+                })
+                .catch((err) => {
+                  console.error("Erreur Google Register :", err);
+                  setError("Erreur lors de l'inscription avec Google");
+                });
+            }}
+            onError={() => {
+              console.log("Google Register échoué");
+              setError("Échec de l'inscription avec Google");
+            }}
+          />
+        </div>
+      </div>
             <p className="mt-4 text-center">
               Déjà inscrit ? <span className="text-green-600 cursor-pointer" onClick={() => setCurrentMode("login")}>Se connecter</span>
             </p>
-          </>
+          </form>
         ) : (
-          <>
+          <form onSubmit={handleLoginSubmit}>
             <h2 className="text-xl font-bold mb-4 text-center">Connexion</h2>
-            <input className="w-full mb-4 p-2 border rounded" placeholder="Adresse Email" />
-            <input className="w-full mb-4 p-2 border rounded" type="password" placeholder="Mot de passe" />
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded mb-4">
+            <input 
+              name="email"
+              type="email"
+              className="w-full mb-4 p-2 border rounded" 
+              placeholder="Adresse Email" 
+              value={loginData.email}
+              onChange={handleLoginChange}
+              required
+            />
+            <input 
+              name="mot_de_passe"
+              type="password"
+              className="w-full mb-4 p-2 border rounded" 
+              placeholder="Mot de passe" 
+              value={loginData.mot_de_passe}
+              onChange={handleLoginChange}
+              required
+            />
+            <button 
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded mb-4"
+            >
               Se connecter
             </button>
 
             <div className="text-sm mb-4 text-center">
               <span>Ou se connecter avec</span>
               <div className="flex justify-center gap-4 mt-2">
-                <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
-                  <img src="/google.png" alt="Google" className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                const token = credentialResponse.credential;
+                const decoded = jwtDecode(token);
+                console.log("Google user decoded:", decoded);
+
+                axios.post("http://localhost:8000/login/google", { token })
+                  .then((res) => {
+                    localStorage.setItem("token", res.data.access_token);
+                    localStorage.setItem("user", JSON.stringify(res.data.user));
+                    handleLoginSuccess(res.data.user); // redirection selon rôle
+                    onClose();
+                  })
+                  .catch((err) => {
+                    console.error("Erreur Google Login :", err);
+                    setError("Connexion Google échouée");
+                  });
+              }}
+              onError={() => {
+                console.log("Login Google échoué");
+                setError("Échec de la connexion avec Google");
+              }}
+            />
+                <button type="button" className="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
                   <img src="/phone.png" alt="Phone" className="w-5 h-5" />
                 </button>
               </div>
@@ -87,7 +317,7 @@ export default function Login({ mode, onClose }) {
             <p className="mt-4 text-center">
               Pas de compte ? <span className="text-green-600 cursor-pointer" onClick={() => setCurrentMode("register")}>S'inscrire</span>
             </p>
-          </>
+          </form>
         )}
 
         <p className="mt-4 text-center text-sm text-gray-600 cursor-pointer" onClick={onClose}>
