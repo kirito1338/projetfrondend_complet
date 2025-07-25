@@ -4,14 +4,23 @@ import Accueil from './Accueil';
 import Login from './Login';
 import CarteTrajets from './CarteTrajets';
 import ChercherTrajet from './ChercherTrajet';
-import ConsulterTrajet from './ConsulterTrajet'; // <-- Import de la page ConsulterTrajet
+import ConsulterTrajet from './ConsulterTrajet';
+import ConducteurPage from './Conducteur'; // ✅ à créer
+import AdminPage from './AdminInterface'; // ✅ à créer
+import Conducteur from './Conducteur';
+import AdminInterface from './AdminInterface';
+import { Toaster } from 'react-hot-toast';
+import MesReservations from './componants/MesReservations';
+
+
 
 export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
-  const [loginMode, setLoginMode] = useState('login'); // 'login' or 'register'
+  const [loginMode, setLoginMode] = useState('login');
+  const [showNotifications, setShowNotifications] = useState(false);
 
-  // Charger l'utilisateur depuis localStorage
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -20,7 +29,7 @@ export default function App() {
   }, []);
 
   const handleLoginSuccess = (userData) => {
-    setUser(userData);
+    setUser(userData.user);
     setShowLogin(false);
   };
 
@@ -32,6 +41,8 @@ export default function App() {
 
   return (
     <Router>
+      <Toaster position="top-center" reverseOrder={false} />
+
       <div className="app-container">
         <Routes>
           <Route
@@ -42,7 +53,10 @@ export default function App() {
                   user={user}
                   onLogout={handleLogout}
                   onLoginClick={() => setShowLogin(true)}
+                  showNotifications={showNotifications}
+                  setShowNotifications={setShowNotifications}
                 />
+
                 {showLogin && (
                   <Login
                     mode={loginMode}
@@ -59,8 +73,30 @@ export default function App() {
             }
           />
           <Route path="/trajets" element={<ConsulterTrajet />} />
-          {/* Rediriger vers l’accueil si l’URL ne correspond à rien */}
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/conducteur" element={<Conducteur />} /> {/* ✅ */}
+          <Route
+            path="/admin"
+            element={
+              user ? (
+                <AdminInterface onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/" />
+              )
+            }
+          />     
+          <Route
+            path="/mes-reservations"
+            element={
+              user && user.role === 'passager' || "student" ? (
+                <MesReservations user={user} />
+              ) : (
+                <Navigate to="/" />
+              )
+            }
+          />
+
+
+     <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </Router>

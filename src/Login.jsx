@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 
-
 export default function Login({ mode, onClose, onLoginSuccess }) {
   const navigate = useNavigate();
   const [role, setRole] = useState("student");
@@ -16,11 +15,11 @@ export default function Login({ mode, onClose, onLoginSuccess }) {
     telephone: "",
     mot_de_passe: "",
     numero_etudiant: "",
-    role: "student"
+    role: "student",
   });
   const [loginData, setLoginData] = useState({
     email: "",
-    mot_de_passe: ""
+    mot_de_passe: "",
   });
   const [error, setError] = useState("");
 
@@ -30,58 +29,109 @@ export default function Login({ mode, onClose, onLoginSuccess }) {
 
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      role: role
-    }));
-  };
-   const handleLoginSuccess = (userData) => {
-    onLoginSuccess(userData); // on prévient le parent
-    if(userData.role === "admin") {
-      navigate("/admin");
-    } else if(userData.role === "driver") {
-      navigate("/conducteur");
-    } else {
-      navigate("/"); // page utilisateur standard
-    }
+    setFormData((prev) => ({ ...prev, [name]: value, role }));
   };
 
   const handleLoginChange = (e) => {
     const { name, value } = e.target;
-    setLoginData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setLoginData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleLoginSuccess = (userData) => {
+    const role = userData.user?.role_user;
+    console.log("Rôle reçu :", role);
+    onLoginSuccess(userData);
+
+    if (role === "admin") navigate("/admin");
+    else if (role === "conducteur") navigate("/conducteur");
+    else navigate("/");
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
+    const payload = {
+      first_name: formData.prenom,
+      last_name: formData.nom,
+      email: formData.email,
+      mot_de_passe: formData.mot_de_passe,
+      num_de_tele: formData.telephone,
+      role_user: formData.role,
+    };
     try {
-      const response = await axios.post("http://localhost:8000/register", formData);
+      const response = await axios.post("http://localhost:8000/api/users/register", payload);
       console.log("Registration successful:", response.data);
-      setCurrentMode("login"); // Switch to login after successful registration
+      setCurrentMode("login");
       setError("");
     } catch (err) {
-      setError(err.response?.data?.detail || "Erreur lors de l'inscription");
-      console.error("Registration error:", err);
-    }
+  let message = "Erreur lors de l'inscription";
+  const detail = err.response?.data?.detail;
+
+  if (Array.isArray(detail)) {
+    message = detail.map((e) => e.msg).join(" / ");
+  } else if (typeof detail === "string") {
+    message = detail;
+  }
+
+  setError(message);
+  console.error("Registration error:", err);
+}
+
   };
 
   const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post("http://localhost:8000/login", loginData);
-      console.log("Login successful:", response.data);
-      localStorage.setItem("token", response.data.access_token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      onLoginSuccess(response.data.user);
-      onClose();
-    } catch (err) {
-      setError(err.response?.data?.detail || "Email ou mot de passe incorrect");
-      console.error("Login error:", err);
+  e.preventDefault();
+  try {
+    const response = await axios.post("http://localhost:8000/api/users/login", loginData);
+
+    const access_token = response.data?.access_token;
+    const user = response.data?.user;
+
+    if (!access_token || !user) {
+      throw new Error("Réponse invalide du serveur");
     }
-  };
+
+    localStorage.setItem("token", access_token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    handleLoginSuccess({ access_token, user });
+    onClose();
+  } catch (err) {
+    let message = "Email ou mot de passe incorrect";
+    const detail = err.response?.data?.detail;
+
+    if (Array.isArray(detail)) {
+      // Cas d’erreurs FastAPI avec liste d’erreurs Pydantic
+      message = detail.map((e) => e.msg).join(" / ");
+    } else if (typeof detail === "string") {
+      message = detail;
+    }
+
+    setError(message);
+    console.error("Login error:", err);
+  }
+};
+
+const handleGoogleLogin = async (credentialResponse) => {
+  const token = credentialResponse.credential;
+  const decoded = jwtDecode(token);
+  console.log("Google user decoded:", decoded);
+  try {
+    const res = await axios.post("http://localhost:8000/api/users/login/google", { token });
+
+    const access_token = res.data.access_token;
+    const user = res.data.user;
+
+    localStorage.setItem("token", access_token);               // ✅ fix ici
+    localStorage.setItem("user", JSON.stringify(user));
+
+    handleLoginSuccess({ access_token, user });
+    onClose();
+  } catch (err) {
+    console.error("Erreur Google Login:", err);
+    setError("Connexion Google échouée");
+  }
+};
+
 
   return (
     <section
@@ -225,29 +275,13 @@ export default function Login({ mode, onClose, onLoginSuccess }) {
             <div className="text-sm mb-4 text-center">
             <span>Ou s'inscrire avec</span>
         <div className="flex justify-center gap-4 mt-2">
-          <GoogleLogin
-            onSuccess={(credentialResponse) => {
-              const token = credentialResponse.credential;
-              const decoded = jwtDecode(token);
-              console.log("Google user decoded (register):", decoded);
-
-              axios.post("http://localhost:8000/login/google", { token })
-                .then((res) => {
-                  localStorage.setItem("token", res.data.access_token);
-                  localStorage.setItem("user", JSON.stringify(res.data.user));
-                  handleLoginSuccess(res.data.user);
-                  onClose();
-                })
-                .catch((err) => {
-                  console.error("Erreur Google Register :", err);
-                  setError("Erreur lors de l'inscription avec Google");
-                });
-            }}
-            onError={() => {
-              console.log("Google Register échoué");
-              setError("Échec de l'inscription avec Google");
-            }}
-          />
+                 <GoogleLogin
+                    onSuccess={handleGoogleLogin}  // Utilisation de la fonction handleGoogleLogin
+                    onError={() => {
+                      console.log("Google Register échoué");
+                      setError("Échec de l'inscription avec Google");
+                    }}
+                  />
         </div>
       </div>
             <p className="mt-4 text-center">
@@ -291,7 +325,7 @@ export default function Login({ mode, onClose, onLoginSuccess }) {
                 const decoded = jwtDecode(token);
                 console.log("Google user decoded:", decoded);
 
-                axios.post("http://localhost:8000/login/google", { token })
+                axios.post("http://localhost:8000/api/users/login/google", { token })
                   .then((res) => {
                     localStorage.setItem("token", res.data.access_token);
                     localStorage.setItem("user", JSON.stringify(res.data.user));

@@ -5,6 +5,13 @@ import "leaflet/dist/leaflet.css";
 import axios from "axios";
 import { GoogleMap, LoadScript, Autocomplete, DirectionsRenderer } from "@react-google-maps/api";
 import { useRef } from "react";
+import api from "../src/api";
+import Navbar from "../src/componants/navbar";
+import CustomToastContainer from "./componants/CustomToastContainer";
+import { toast } from "react-toastify";
+
+
+
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBo_o1KoYrdYgDbPkR2e0uwj5qrXUSeOwE";
 
@@ -42,6 +49,8 @@ const Conducteur = () => {
   const arriveeAutocompleteRef = useRef(null);
   const [directions, setDirections] = useState(null);
   const [userNames, setUserNames] = useState({});
+  const [successToast, setSuccessToast] = useState(null);
+
 
 
   // Le token JWT stocké dans localStorage (à gérer selon ton système d'authentification)
@@ -57,7 +66,7 @@ const Conducteur = () => {
   useEffect(() => {
   const fetchNames = async () => {
     try {
-      const res = await axios.get(`${API_URL}/users/all_names`, axiosConfig);
+      const res = await axios.get(`${API_URL}/api/users/all_names`, axiosConfig);
       const mapping = {};
       res.data.forEach(u => {
         mapping[u.id] = u.nom;
@@ -68,34 +77,69 @@ const Conducteur = () => {
     }
   };
 
+
   fetchNames();
 }, []);
+useEffect(() => {
+  const fetchNotifications = async () => {
+    try {
+      const resUser = await api.get("/api/users/me");
+      const userId = resUser.data.id_user;
 
-  // Charger trajets depuis API au montage
-  useEffect(() => {
-    if (!token) return;
-    fetchTrajets();
-    fetchMessages();
-  }, [token]);
+      const res = await api.get(`/api/notifications/user/${userId}`);
+
+      for (const notif of res.data) {
+        // ✅ Affiche la notification
+        toast.info(
+          <div>
+            <strong>{notif.titre}</strong>
+            <p>{notif.message}</p>
+          </div>,
+          {
+            position: "bottom-right",
+            autoClose: 8000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
+
+        // ✅ Supprime la notification après affichage
+        await api.delete(`/api/notifications/${notif.id_notification}`);
+      }
+    } catch (err) {
+      console.error("Erreur chargement notifications:", err);
+    }
+  };
+
+  fetchNotifications();
+}, [token]);
+
+useEffect(() => {
+  fetchTrajets();
+  fetchMessages();
+}, []);
 
   // Fetch trajets du conducteur
-  const fetchTrajets = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/driver/rides`, axiosConfig);
-      setTrajets(res.data);
-    } catch (error) {
-      console.error("Erreur chargement trajets", error);
-      alert("Erreur chargement trajets. Veuillez vérifier votre connexion ou authentification.");
-    }
-    setLoading(false);
-  };
+const fetchTrajets = async () => {
+  setLoading(true);
+  try {
+    console.log("Appel URL:", `${API_URL}/api/Conducteur/mesTrajets`);
+    const res = await axios.get(`${API_URL}/api/Conducteur/mesTrajets`, axiosConfig);
+    setTrajets(res.data);
+  } catch (error) {
+    console.error("Erreur chargement trajets", error);
+    alert("Erreur chargement trajets. Veuillez vérifier votre connexion ou authentification.");
+  }
+  setLoading(false);
+};
 
   // Fetch messages support
   const fetchMessages = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/support`, axiosConfig);
+      const res = await axios.get(`${API_URL}/api/messages`, axiosConfig);
       setMessages(res.data);
     } catch (error) {
       console.error("Erreur chargement messages", error);
@@ -114,59 +158,71 @@ const Conducteur = () => {
     }
   };
 
+const convertTo24HourFormat = (timeStr) => {
+  if (!timeStr.includes('AM') && !timeStr.includes('PM')) {
+    // Si déjà en format 24h (HH:MM), on rajoute ":00"
+    return timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+  }
 
-  // Ajouter ou modifier trajet
-  const handleAjouterTrajet = async () => {
-    try {
-      if (editTrajet) {
-        // Pas d'endpoint PUT dans ton API, donc suppression + ajout (pas idéal, à améliorer côté backend)
-        await axios.delete(`${API_URL}/rides/${editTrajet}`, axiosConfig);
-        const newRide = {
-          depart: formTrajet.depart,
-          arrivee: formTrajet.arrivee,
-          date: formTrajet.date,
-          heure: formTrajet.heure,
-          places: parseInt(formTrajet.places, 10),
-        };
-        await axios.post(`${API_URL}/rides`, newRide, axiosConfig);
-      } else {
-        const newRide = {
-          depart: formTrajet.depart,
-          arrivee: formTrajet.arrivee,
-          date: formTrajet.date,
-          heure: formTrajet.heure,
-          places: parseInt(formTrajet.places, 10),
-        };
-        await axios.post(`${API_URL}/rides`, newRide, axiosConfig);
-      }
-      setFormTrajet({ depart: "", arrivee: "", date: "", heure: "", places: "" });
-      setEditTrajet(null);
-      await fetchTrajets();
-      setSection("trajets");
-    } catch (error) {
-      console.error("Erreur ajout/modification trajet", error);
-      alert("Erreur lors de la sauvegarde du trajet.");
-    }
-  };
+  const [time, modifier] = timeStr.split(" ");
+  let [hours, minutes] = time.split(":");
 
-  // Modifier un trajet : remplir le formulaire
+  hours = parseInt(hours, 10);
+
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
+};
+
+
+const handleAjouterTrajet = async () => {
+  try {
+    const heure24 = convertTo24HourFormat(formTrajet.heure);
+
+    const newRide = {
+      pointDepart: formTrajet.depart,
+      pointArrivee: formTrajet.arrivee,
+      date: formTrajet.date,
+      heureDepart: heure24,  // ✅ format attendu "HH:MM:SS"
+      placesDisponibles: parseInt(formTrajet.places, 10),
+      etat: "ouvert"
+    };
+
+    console.log("➡️ Données envoyées au backend :", newRide);
+
+    await axios.post(`${API_URL}/api/trajet/addTrajet`, newRide, axiosConfig);
+
+    setFormTrajet({ depart: "", arrivee: "", date: "", heure: "", places: "" });
+    setEditTrajet(null);
+    await fetchTrajets();
+    setSection("trajets");
+  } catch (error) {
+    console.error("❌ Erreur ajout/modification trajet", error);
+    alert("Erreur lors de l'ajout ou modification du trajet.");
+  }
+};
+
+
   const handleModifier = (t) => {
+    const [dateStr, timeStr] = t.heureDepart.split(" ");
     setFormTrajet({
-      depart: t.depart,
-      arrivee: t.arrivee,
-      date: t.date,
-      heure: t.heure,
-      places: t.places,
+      depart: t.pointDepart,
+      arrivee: t.pointArrivee,
+      date: dateStr,
+      heure: timeStr,
+      places: t.placesDisponibles,
     });
-    setEditTrajet(t.id);
+    setEditTrajet(t.idTrajet);
     setSection("proposer");
   };
+
 
   // Supprimer trajet
   const handleSupprimer = async (id) => {
     if (!window.confirm("Voulez-vous vraiment supprimer ce trajet ?")) return;
     try {
-      await axios.delete(`${API_URL}/rides/${id}`, axiosConfig);
+      await axios.delete(`${API_URL}/api/Conducteur/trajet/${id}`, axiosConfig);
       await fetchTrajets();
     } catch (error) {
       console.error("Erreur suppression trajet", error);
@@ -174,21 +230,40 @@ const Conducteur = () => {
     }
   };
 
-  // Envoyer un message de support
-  const handleEnvoyerMessage = async () => {
-    if (!messageForm.contenu.trim()) {
-      alert("Le message ne peut pas être vide");
+  const handleEnvoyerMessageForm = async () => {
+  const { contenu, trajetId, destinataireUserId } = messageForm;
+
+  if (!contenu.trim()) {
+    alert("Le message ne peut pas être vide.");
+    return;
+  }
+
+  try {
+    if (destinataireUserId) {
+      // Envoi privé à un utilisateur
+      await api.post(`/api/messages/send_message_to_user/${destinataireUserId}`, { contenu });
+    } else if (trajetId) {
+      // Envoi à tous les passagers d’un trajet
+      console.log("📤 Envoi à", trajetId, "contenu =", contenu);
+
+      await api.post(`/api/messages/send_message_to_passengers/${trajetId}`, { contenu });
+    } else {
+      alert("Veuillez choisir un destinataire ou un trajet.");
       return;
     }
-    try {
-      await axios.post(`${API_URL}/support`, { message: messageForm.contenu }, axiosConfig);
-      setMessageForm({ contenu: "" });
-      await fetchMessages();
-    } catch (error) {
-      console.error("Erreur envoi message", error);
-      alert("Erreur lors de l'envoi du message.");
-    }
-  };
+
+    setMessageForm({ contenu: "", destinataireUserId: "", trajetId: "" });
+    await fetchMessages();
+
+    setSuccessToast("Message envoyé avec succès ! 🎉");
+
+    setTimeout(() => setSuccessToast(null), 3000); // Cache après 3s
+  } catch (error) {
+    console.error("Erreur envoi message", error);
+    alert("Erreur lors de l'envoi.");
+  }
+};
+
   
 
   // Déconnexion simple
@@ -313,12 +388,16 @@ const Conducteur = () => {
               onChange={(e) => setFormTrajet({ ...formTrajet, date: e.target.value })}
               className="border p-3 rounded w-full"
             />
+
             <input
               type="time"
               value={formTrajet.heure}
-              onChange={(e) => setFormTrajet({ ...formTrajet, heure: e.target.value })}
+              onChange={(e) =>
+                setFormTrajet({ ...formTrajet, heure: e.target.value })
+              }
               className="border p-3 rounded w-full"
             />
+
             <input
               type="number"
               placeholder="Places disponibles"
@@ -340,30 +419,57 @@ const Conducteur = () => {
         );
 
       case "trajets":
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold text-blue-700">Mes trajets</h2>
+      {trajets.length === 0 && <p>Aucun trajet pour le moment.</p>}
+      {trajets.map(t => {
+        // 🔍 extraction sûre de l’heure uniquement
+        const heureClean = t.heureDepart?.includes(" ")
+          ? t.heureDepart.split(" ")[1]
+          : t.heureDepart;
+        const fullDate = `${t.date}T${heureClean}`;
+        const isValidDate = !isNaN(new Date(fullDate));
+
         return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-blue-700">Mes trajets</h2>
-            {trajets.length === 0 && <p>Aucun trajet pour le moment.</p>}
-            {trajets.map(t => (
-              <div key={t.id} className="bg-white p-4 shadow-md rounded-xl flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold text-lg text-blue-800">{t.depart} → {t.arrivee}</h3>
-                  <p>{t.date} à {t.heure}</p>
-                  <p>Places : {t.places}</p>
-                  <p>Approuvé : {t.approved ? "Oui" : "Non"}</p>
-                </div>
-                <div className="space-x-2">
-                  <button onClick={() => handleModifier(t)} className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600">
-                    Modifier
-                  </button>
-                  <button onClick={() => handleSupprimer(t.id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-                    Supprimer
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div key={t.idTrajet} className="bg-white p-4 shadow-md rounded-xl flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-lg text-blue-800">
+                {t.pointDepart} → {t.pointArrivee}
+              </h3>
+              <p>
+                <strong>Date & Heure :</strong>{" "}
+                {isValidDate
+                  ? new Date(fullDate).toLocaleString("fr-FR", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "Non défini"}
+              </p>
+              <p><strong>Places :</strong> {t.placesDisponibles}</p>
+              <p><strong>État :</strong> {t.etat}</p>
+              <p><strong>Approuvé :</strong> {t.approuve ? "Oui" : "Non"}</p>
+            </div>
+            <div className="space-x-2">
+              <button
+                onClick={() => handleModifier(t)}
+                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+              >
+                Modifier
+              </button>
+              <button
+                onClick={() => handleSupprimer(t.idTrajet)}
+                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+              >
+                Supprimer
+              </button>
+            </div>
           </div>
         );
+      })}
+    </div>
+  );
+
 
         case "messages":
           return (
@@ -401,15 +507,15 @@ const Conducteur = () => {
                   onChange={e =>
                     setMessageForm({
                       ...messageForm,
-                      trajetId: e.target.value,
+                      trajetId: parseInt(e.target.value, 10),
                       destinataireUserId: ""
                     })
                   }
                 >
                   <option value="">-- Envoyer à tous les passagers d’un trajet --</option>
                   {trajets.map(t => (
-                    <option key={t.id} value={t.id}>
-                      Trajet {t.depart} → {t.arrivee}
+                    <option key={t.idTrajet} value={t.idTrajet}>
+                      Trajet {t.pointDepart} → {t.pointArrivee}
                     </option>
                   ))}
                 </select>
@@ -427,45 +533,17 @@ const Conducteur = () => {
                 />
 
                 <button
-                  onClick={async () => {
-                    const { contenu, trajetId, destinataireUserId } = messageForm;
-                    if (!contenu.trim()) {
-                      alert("Le message ne peut pas être vide.");
-                      return;
-                    }
-
-                    try {
-                      if (destinataireUserId) {
-                        // envoi privé
-                        await axios.post(
-                          `${API_URL}/send_message_to_user/${destinataireUserId}`,
-                          { message: contenu },
-                          axiosConfig
-                        );
-                      } else if (trajetId) {
-                        // envoi aux passagers
-                        await axios.post(
-                          `${API_URL}/send_message_to_passengers/${trajetId}`,
-                          { message: contenu },
-                          axiosConfig
-                        );
-                      } else {
-                        alert("Veuillez choisir un destinataire ou un trajet.");
-                        return;
-                      }
-
-                      setMessageForm({ contenu: "", destinataireUserId: "", trajetId: "" });
-                      await fetchMessages();
-                    } catch (error) {
-                      console.error("Erreur envoi message", error);
-                      alert("Erreur lors de l'envoi.");
-                    }
-                  }}
+                  onClick={handleEnvoyerMessageForm}
                   className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
                   Envoyer
                 </button>
               </div>
+              {successToast && (
+                <div className="fixed bottom-6 right-6 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl animate-fade-in-out z-[9999]">
+                  <p className="font-semibold">{successToast}</p>
+                </div>
+              )}
             </div>
           );
 
@@ -485,6 +563,8 @@ const Conducteur = () => {
   };
 
   return (
+
+
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-indigo-100 text-gray-800">
       <header className="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
@@ -571,9 +651,10 @@ const Conducteur = () => {
           </div>
         </div>
       )}
+      <CustomToastContainer />
 
     </div>
-    
+
   );
 };
 
