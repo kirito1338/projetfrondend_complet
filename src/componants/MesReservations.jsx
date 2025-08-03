@@ -6,6 +6,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import { GoogleMap, DirectionsService, DirectionsRenderer, useJsApiLoader } from "@react-google-maps/api";
 import { motion } from "framer-motion";
 import Spline from "@splinetool/react-spline";
+import Navbar from "./navbar"; // Ajout Navbar
+import Footer from "./Footer"; // Ajout Footer
 
 const containerStyle = {
   width: "100%",
@@ -17,22 +19,63 @@ const MesReservations = () => {
   const [messageBoxData, setMessageBoxData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState({}); // trajet.idTrajet => directions
+  const [user, setUser] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showApropos, setShowApropos] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   // Chargement de l'API Google Maps
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyBo_o1KoYrdYgDbPkR2e0uwj5qrXUSeOwE", // Remplace par ta clé
   });
 
-  // Notation du trajet
-  const noterTrajet = async (trajetId, note) => {
-    try {
-      await api.post(`/api/passager/noter-trajet/${trajetId}`, { note });
-      alert("Note envoyée avec succès !");
-    } catch (error) {
-      console.error("Erreur lors de l'envoi de la note :", error);
-      alert("Erreur lors de la notation.");
-    }
-  };
+ const noterTrajet = async (trajetId, note) => {
+  try {
+    await api.post(`/api/passager/noter-trajet/${trajetId}`, { note });
+    alert("Note envoyée avec succès !");
+    // Met à jour la note localement pour affichage immédiat
+    setReservations((prev) =>
+      prev.map((t) =>
+        t.idTrajet === trajetId ? { ...t, note } : t
+      )
+    );
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de la note :", error);
+    alert("Erreur lors de la notation.");
+  }
+};
+useEffect(() => {
+  const userData = localStorage.getItem("user");
+  if (userData) setUser(JSON.parse(userData));
+}, []);
+
+const supprimerHistorique = async (idTrajet) => {
+  if (!window.confirm("Supprimer ce trajet de l'historique ?")) return;
+  try {
+    await api.delete(`/api/passager/supprimer-historique/${idTrajet}`);
+    setReservations((prev) => prev.filter((t) => t.idTrajet !== idTrajet));
+    alert("Trajet supprimé de l'historique");
+  } catch (err) {
+    console.error("Erreur suppression historique:", err);
+    alert("Erreur lors de la suppression");
+  }
+};
+
+const confirmerUtilisation = async (trajetId) => {
+  try {
+    // Appelle ton endpoint pour confirmer l'utilisation du trajet
+    await api.post(`/api/passager/confirmer-utilisation/${trajetId}`);
+    setReservations((prev) =>
+      prev.map((t) =>
+        t.idTrajet === trajetId ? { ...t, utilise: true } : t
+      )
+    );
+    alert("Trajet confirmé comme utilisé !");
+  } catch (error) {
+    console.error("Erreur lors de la confirmation :", error);
+    alert("Erreur lors de la confirmation.");
+  }
+};
 
   // Chargement des réservations
   const fetchReservations = async () => {
@@ -74,6 +117,17 @@ const MesReservations = () => {
   }, []);
 
   return (
+<>
+      <Navbar
+        user={user}
+        handleLogout={() => { setUser(null); }}
+        setShowLogin={setShowLogin}
+        setShowApropos={setShowApropos}
+        setShowContact={setShowContact}
+        showApropos={showApropos}
+        showContact={showContact}
+      />
+
     <div className="relative min-h-screen">
       <div className="absolute top-0 left-0 w-full h-full -z-10">
         <Spline scene="https://prod.spline.design/Ct-JIbUDzlqrrtKO/scene.splinecode" />
@@ -127,38 +181,56 @@ const MesReservations = () => {
                           {trajet.etat}
                         </span>
                       </div>
-                     <div className="mt-2">
-                        <div className="flex items-center gap-1 text-sm">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                                key={star}
-                                onClick={() => noterTrajet(trajet.idTrajet, star)}
-                                className="hover:scale-110 transition"
-                            >
-                                <Star
-                                className={`w-5 h-5 ${
-                                    trajet.note && star <= trajet.note ? "text-yellow-400" : "text-gray-300"
-                                }`}
-                                fill={trajet.note && star <= trajet.note ? "yellow" : "none"}
-                                />
-                            </button>
-                            ))}
-                            <span className="ml-2 text-xs text-gray-500">
-                            {trajet.note ? `${trajet.note.toFixed(1)}/5` : "Pas encore noté"}
-                            </span>
-                        </div>
-                        </div>
-                        </div>
+                   <div className="mt-2">
+                    {!trajet.utilise ? (
+                      <button
+                        onClick={() => confirmerUtilisation(trajet.idTrajet)}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                      >
+                        J'ai utilisé ce trajet
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 text-sm">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => noterTrajet(trajet.idTrajet, star)}
+                            className="hover:scale-110 transition"
+                          >
+                            <Star
+                              className={`w-5 h-5 ${
+                                trajet.note && star <= trajet.note ? "text-yellow-400" : "text-gray-300"
+                              }`}
+                              fill={trajet.note && star <= trajet.note ? "yellow" : "none"}
+                            />
+                          </button>
+                        ))}
+                        <span className="ml-2 text-xs text-gray-500">
+                          {trajet.note ? `${trajet.note.toFixed(1)}/5` : "Pas encore noté"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  </div>
 
                   </div>
 
                   <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => annulerReservation(trajet.idTrajet)}
-                      className="flex items-center bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm shadow"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" /> Annuler
-                    </button>
+                    {!trajet.utilise ? (
+                      <button
+                        onClick={() => annulerReservation(trajet.idTrajet)}
+                        className="flex items-center bg-red-500 text-white px-3 py-2 rounded hover:bg-red-600 text-sm shadow"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Annuler
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => supprimerHistorique(trajet.idTrajet)}
+                        className="flex items-center bg-gray-700 text-white px-3 py-2 rounded hover:bg-gray-900 text-sm shadow"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" /> Supprimer
+                      </button>
+                    )}
                     <button
                       onClick={() => setMessageBoxData({ idExpediteur: trajet.idConducteur })}
                       className="flex items-center bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm shadow"
@@ -166,37 +238,37 @@ const MesReservations = () => {
                       <Send className="w-4 h-4 mr-1" /> Contacter
                     </button>
                   </div>
-                </div>
+                  </div>
 
                 {isLoaded && (
-                  <div className="mt-4 rounded overflow-hidden border">
-                    <GoogleMap
-                      mapContainerStyle={containerStyle}
-                      center={{ lat: 45.5017, lng: -73.5673 }} // Montréal par défaut
-                      zoom={10}
-                    >
-                      {!directions[trajet.idTrajet] && (
-                        <DirectionsService
-                          options={{
-                            origin: trajet.pointDepart,
-                            destination: trajet.pointArrivee,
-                            travelMode: "DRIVING",
-                          }}
-                          callback={(result, status) =>
-                            handleDirectionsCallback(trajet.idTrajet, result, status)
-                          }
-                        />
-                      )}
-                      {directions[trajet.idTrajet] && (
-                        <DirectionsRenderer
-                          options={{
-                            directions: directions[trajet.idTrajet],
-                          }}
-                        />
-                      )}
-                    </GoogleMap>
-                  </div>
-                )}
+  <div className="mt-4 rounded overflow-hidden border">
+    <GoogleMap
+      mapContainerStyle={containerStyle}
+      center={{ lat: 45.5017, lng: -73.5673 }} // Montréal par défaut
+      zoom={10}
+    >
+      {!directions[trajet.idTrajet] && (
+        <DirectionsService
+          options={{
+            origin: trajet.pointDepart,
+            destination: trajet.pointArrivee,
+            travelMode: "DRIVING",
+          }}
+          callback={(result, status) =>
+            handleDirectionsCallback(trajet.idTrajet, result, status)
+          }
+        />
+      )}
+      {directions[trajet.idTrajet] && (
+        <DirectionsRenderer
+          options={{
+            directions: directions[trajet.idTrajet],
+          }}
+        />
+      )}
+    </GoogleMap>
+  </div>
+)}
               </motion.div>
             ))}
           </div>
@@ -207,6 +279,9 @@ const MesReservations = () => {
         )}
       </div>
     </div>
+    <Footer />
+
+  </>
   );
 };
 

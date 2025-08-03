@@ -43,7 +43,8 @@ const Conducteur = () => {
   const [selectedUser, setSelectedUser] = useState(null); // utilisateur cible
   const [conversation, setConversation] = useState([]);   // messages échangés
   const [newMessage, setNewMessage] = useState("");    
-  
+  const [cheminPoints, setCheminPoints] = useState(null); // tout en haut
+
 
    const departAutocompleteRef = useRef(null);
   const arriveeAutocompleteRef = useRef(null);
@@ -52,7 +53,37 @@ const Conducteur = () => {
   const [successToast, setSuccessToast] = useState(null);
 
 
+// Ajoute cette fonction utilitaire dans Conducteur.jsx
+function decodePolyline(encoded) {
+  // Utilitaire pour décoder une polyline Google en tableau de [lat, lng]
+  let points = [];
+  let index = 0, len = encoded.length;
+  let lat = 0, lng = 0;
 
+  while (index < len) {
+    let b, shift = 0, result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    points.push([lat / 1e5, lng / 1e5]);
+  }
+  return points;
+}
   // Le token JWT stocké dans localStorage (à gérer selon ton système d'authentification)
   const token = localStorage.getItem("token");
 
@@ -62,6 +93,7 @@ const Conducteur = () => {
       Authorization: `Bearer ${token}`,
     },
   };
+  
 
   useEffect(() => {
   const fetchNames = async () => {
@@ -176,7 +208,9 @@ const convertTo24HourFormat = (timeStr) => {
 };
 
 
-const handleAjouterTrajet = async () => {
+const handleAjouterTrajet = async (polyline) => {
+    console.log("Appel handleAjouterTrajet avec polyline =", polyline);
+
   try {
     const heure24 = convertTo24HourFormat(formTrajet.heure);
 
@@ -184,12 +218,11 @@ const handleAjouterTrajet = async () => {
       pointDepart: formTrajet.depart,
       pointArrivee: formTrajet.arrivee,
       date: formTrajet.date,
-      heureDepart: heure24,  // ✅ format attendu "HH:MM:SS"
+      heureDepart: heure24,
       placesDisponibles: parseInt(formTrajet.places, 10),
-      etat: "ouvert"
+      etat: "ouvert",
+      chemin_points: polyline // <-- Utilise le paramètre ici
     };
-
-    console.log("➡️ Données envoyées au backend :", newRide);
 
     await axios.post(`${API_URL}/api/trajet/addTrajet`, newRide, axiosConfig);
 
@@ -203,7 +236,13 @@ const handleAjouterTrajet = async () => {
   }
 };
 
-
+const handleCalculateAndAddTrajet = async () => {
+  await calculateRoute();
+  // Attendre que cheminPoints soit bien mis à jour
+  setTimeout(() => {
+    handleAjouterTrajet();
+  }, 500); // 500ms suffit généralement, ajuste si besoin
+};
   const handleModifier = (t) => {
     const [dateStr, timeStr] = t.heureDepart.split(" ");
     setFormTrajet({
@@ -271,31 +310,48 @@ const handleAjouterTrajet = async () => {
     localStorage.removeItem("token");
     window.location.reload();
   };
-  const calculateRoute = async () => {
-    if (!departAutocompleteRef.current || !arriveeAutocompleteRef.current) return;
+  const calculateRoute = (callback) => {
+if (!departAutocompleteRef.current || !arriveeAutocompleteRef.current) {
+    console.log("Autocomplete refs non définis");
+    if (callback) callback(null);
+    return;
+  }
+  const origin = departAutocompleteRef.current.getPlace()?.formatted_address;
+  const destination = arriveeAutocompleteRef.current.getPlace()?.formatted_address;
 
-    const origin = departAutocompleteRef.current.getPlace()?.formatted_address;
-    const destination = arriveeAutocompleteRef.current.getPlace()?.formatted_address;
+  if (!origin || !destination) return;
 
-    if (!origin || !destination) return;
+  const directionsService = new window.google.maps.DirectionsService();
 
-    const directionsService = new window.google.maps.DirectionsService();
-
-    directionsService.route(
-      {
-        origin,
-        destination,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === "OK") {
-          setDirections(result);  // <-- stocke dans l'état
-        } else {
-          console.error("Erreur itinéraire:", status);
-        }
-      }
-    );
-  };
+ directionsService.route(
+  {
+    origin,
+    destination,
+    travelMode: window.google.maps.TravelMode.DRIVING,
+  },
+  (result, status) => {
+   if (status === "OK") {
+  setDirections(result);
+  console.log("result.routes:", result.routes);
+  const overview = result.routes[0]?.overview_polyline;
+  const encodedPolyline = overview?.points || overview; // essaye les deux
+  console.log("encodedPolyline:", encodedPolyline);
+  if (encodedPolyline) {
+    const decoded = decodePolyline(encodedPolyline);
+    if (decoded && decoded.length > 0) {
+      const decodedStr = JSON.stringify(decoded);
+      setCheminPoints(decodedStr);
+      if (callback) callback(decodedStr);
+    } else {
+      if (callback) callback(null);
+    }
+  } else {
+    if (callback) callback(null);
+  }
+}
+  }
+);
+};
 
   // Rendu du composant
   const renderSection = () => {
@@ -406,15 +462,27 @@ const handleAjouterTrajet = async () => {
               className="border p-3 rounded w-full"
               min={1}
             />
-            <button
-              onClick={async () => {
-                await calculateRoute();
-                handleAjouterTrajet();
-              }}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              {editTrajet ? "Modifier" : "Ajouter"}
-            </button>
+<button
+  onClick={() => {
+    if (
+      !departAutocompleteRef.current?.getPlace() ||
+      !arriveeAutocompleteRef.current?.getPlace()
+    ) {
+      alert("Veuillez sélectionner le départ et l'arrivée via la suggestion Google Maps.");
+      return;
+    }
+    calculateRoute((polyline) => {
+      if (!polyline) {
+        alert("Impossible d'ajouter le trajet : l'itinéraire n'a pas été généré.");
+        return;
+      }
+      handleAjouterTrajet(polyline);
+    });
+  }}
+  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+>
+  {editTrajet ? "Modifier" : "Ajouter"}
+</button>
           </div>
         );
 
@@ -480,16 +548,15 @@ const handleAjouterTrajet = async () => {
               {messages.map(msg => (
                 <div key={msg.id} className="bg-white p-4 rounded shadow">
                   <p className="font-bold text-blue-800">
-                    {userNames[msg.user_id] ? userNames[msg.user_id] : `Utilisateur #${msg.user_id}`}
+                    {userNames[msg.idExpediteur] ? userNames[msg.idExpediteur] : `Utilisateur #${msg.idExpediteur}`}
                   </p>
-
                   <p>{msg.message || msg.contenu}</p>
                   <p className="text-sm text-gray-500">{msg.date}</p>
                   {msg.reponse && <p className="text-sm text-green-600">Réponse : {msg.reponse}</p>}
-                  {/* bouton pour répondre en privé */}
                   <button
-                    onClick={() => fetchConversation(msg.user_id)}
+                    onClick={() => fetchConversation(msg.idExpediteur)}
                     className="text-sm text-blue-600 underline mt-1"
+                    disabled={!msg.idExpediteur}
                   >
                     Répondre en privé
                   </button>
@@ -568,7 +635,7 @@ const handleAjouterTrajet = async () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-indigo-100 text-gray-800">
       <header className="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-          <h1 className="text-3xl font-bold text-blue-800">🚗 Covoiturage</h1>
+          <h1 className="text-3xl font-bold text-blue-800">🚗 Commevoitourage</h1>
           <nav className="space-x-4 text-sm">
             {["accueil", "proposer", "trajets", "messages", "parametres"].map((item, i) => (
               <button
@@ -636,7 +703,7 @@ const handleAjouterTrajet = async () => {
                   if (!newMessage.trim()) return;
                   try {
                     await axios.post(`${API_URL}/send_message_to_user/${selectedUser}`, {
-                      message: newMessage
+                      contenu: newMessage
                     }, axiosConfig);
                     setNewMessage("");
                     await fetchConversation(selectedUser); // refresh

@@ -8,6 +8,14 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../src/componants/navbar";
 import { ToastContainer, toast } from "react-toastify";
 import CustomToastContainer from "./componants/CustomToastContainer";
+import Chatbot from "./componants/chatbot";
+import { MessageCircle } from "lucide-react";
+import Footer from "./componants/Footer";
+import APropos from "./componants/APropos";
+import ContactAdmin from "./componants/ContactAdmin";
+import Carriere from "./componants/Carriere";
+import MentionsLegalesModal from "./componants/MentionsLegalesModal";
+import { useLang } from "./LangContext"; // <-- Ajoute ceci
 
 export default function Accueil() {
   const navigate = useNavigate();
@@ -20,7 +28,10 @@ export default function Accueil() {
   const [showConducteur, setShowConducteur] = useState(false);
   const [user, setUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
-
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [showCarriere, setShowCarriere] = useState(false);
+  const [mentionType, setMentionType] = useState(null);
+  const { t } = useLang(); // <-- Appelle le hook ici
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -40,55 +51,54 @@ export default function Accueil() {
   }, []);
 
   const handleLoginSuccess = async (userData) => {
-  setUser(userData);
-  setShowLogin(false);
+    setUser(userData);
+    setShowLogin(false);
 
-  if (userData.role === "admin") setShowAdmin(true);
-  else if (userData.role === "driver") setShowConducteur(true);
+    if (userData.role === "admin") setShowAdmin(true);
+    else if (userData.role === "driver") setShowConducteur(true);
 
-  try {
-    const [notifRes, progRes, msgRes] = await Promise.all([
-      api.get(`/api/notifications/user/${userData.id_user}`),
-      api.get(`/api/messages_programmes/user/${userData.id_user}`),
-      api.get(`/api/messages/received/${userData.id_user}`),
-    ]);
+    try {
+      const [notifRes, progRes, msgRes] = await Promise.all([
+        api.get(`/api/notifications/user/${userData.id_user}`),
+        api.get(`/api/messages_programmes/user/${userData.id_user}`),
+        api.get(`/api/messages/received/${userData.id_user}`),
+      ]);
 
-    const allItems = [
-      ...notifRes.data.map((n) => ({
-        titre: n.titre,
-        contenu: n.message,
-      })),
-      ...progRes.data.map((m) => ({
-        titre: "Message programmé",
-        contenu: m.contenu,
-      })),
-      ...msgRes.data.map((m) => ({
-        titre: `Message de l'utilisateur ${m.id_expediteur}`,
-        contenu: m.contenu,
-      })),
-    ];
+      const allItems = [
+        ...notifRes.data.map((n) => ({
+          titre: n.titre,
+          contenu: n.message,
+        })),
+        ...progRes.data.map((m) => ({
+          titre: "Message programmé",
+          contenu: m.contenu,
+        })),
+        ...msgRes.data.map((m) => ({
+          titre: `Message de l'utilisateur ${m.id_expediteur}`,
+          contenu: m.contenu,
+        })),
+      ];
 
-    allItems.forEach((item) => {
-      toast.info(
-        <div>
-          <strong>{item.titre}</strong>
-          <p>{item.contenu}</p>
-        </div>,
-        {
-          position: "bottom-right",
-          autoClose: 8000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        }
-      );
-    });
-  } catch (err) {
-    console.error("Erreur lors du chargement des notifications/messages", err);
-  }
-};
-
+      allItems.forEach((item) => {
+        toast.info(
+          <div>
+            <strong>{item.titre}</strong>
+            <p>{item.contenu}</p>
+          </div>,
+          {
+            position: "bottom-right",
+            autoClose: 8000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          }
+        );
+      });
+    } catch (err) {
+      console.error("Erreur lors du chargement des notifications/messages", err);
+    }
+  };
 
   const handleSecretButtonClick = (role) => {
     if (user && user.role === role) {
@@ -138,7 +148,6 @@ export default function Accueil() {
         setShowNotifications={setShowNotifications}
       />
 
-
       <div className="absolute inset-x-0 top-[64px] bottom-0 z-0">
         <img
           src="/femme.jpg"
@@ -159,7 +168,8 @@ export default function Accueil() {
             )}
           </h1>
           <p className="mb-8 text-lg text-gray-200 animate-pulse">
-            Trouve ou propose un trajet rapidement dans ton école ou université. Confort, économie et ponctualité réunis !
+            {t("trouveOuPropose") ||
+              "Trouve ou propose un trajet rapidement dans ton école ou université. Confort, économie et ponctualité réunis !"}
           </p>
           <div className="flex gap-4">
             {user ? (
@@ -202,19 +212,21 @@ export default function Accueil() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex flex-col items-center">
               <span className="text-2xl font-bold text-green-400">+95%</span>
-              <span>Fiabilité</span>
+              <span>{t("fiabilite") || "Fiabilité"}</span>
             </div>
             <div className="flex flex-col items-center">
               <span className="text-2xl font-bold text-green-400">10k+</span>
-              <span>Trajets</span>
+              <span>{t("trajets") || "Trajets"}</span>
             </div>
             <div className="flex flex-col items-center">
-              <span className="text-2xl font-bold text-green-400">Étudiants</span>
-              <span>inscrits</span>
+              <span className="text-2xl font-bold text-green-400">
+                {t("etudiants") || "Étudiants"}
+              </span>
+              <span>{t("inscrits") || "inscrits"}</span>
             </div>
             <div className="flex flex-col items-center">
               <span className="text-2xl font-bold text-green-400">24/7</span>
-              <span>Support</span>
+              <span>{t("support") || "Support"}</span>
             </div>
           </div>
         </div>
@@ -224,34 +236,14 @@ export default function Accueil() {
         <CarteTrajets />
       </div>
 
-      {showApropos && (
-        <div className="fixed inset-0 z-40 bg-black/60 flex items-center justify-center">
-          <div className="bg-white text-black rounded-lg p-8 max-w-md w-full relative shadow-lg">
-            <button
-              className="absolute top-2 right-2 text-xl font-bold"
-              onClick={() => setShowApropos(false)}
-            >
-              ×
-            </button>
-            <h2 className="text-2xl font-bold mb-4">À propos</h2>
-            <p>Notre plateforme de covoiturage a été conçue pour rapprocher les étudiants d’une même école ou université. Que vous soyez conducteur ou passager, facilitez vos trajets au quotidien tout en faisant des économies !</p>
-          </div>
-        </div>
-      )}
-
-      {showContact && (
-        <div className="fixed inset-0 z-40 bg-black/60 flex items-center justify-center">
-          <div className="bg-white text-black rounded-lg p-8 max-w-md w-full relative shadow-lg">
-            <button
-              className="absolute top-2 right-2 text-xl font-bold"
-              onClick={() => setShowContact(false)}
-            >
-              ×
-            </button>
-            <h2 className="text-2xl font-bold mb-4">Contact</h2>
-            <p>Vous pouvez nous contacter à : contact@covoiturageplus.com</p>
-          </div>
-        </div>
+      {showApropos && <APropos onClose={() => setShowApropos(false)} />}
+      {showContact && <ContactAdmin onClose={() => setShowContact(false)} />}
+      {showCarriere && <Carriere onClose={() => setShowCarriere(false)} />}
+      {mentionType && (
+        <MentionsLegalesModal
+          type={mentionType}
+          onClose={() => setMentionType(null)}
+        />
       )}
 
       {showLogin && (
@@ -263,8 +255,21 @@ export default function Accueil() {
           />
         </div>
       )}
-
+      {showChatbot && <Chatbot onClose={() => setShowChatbot(false)} />}
+      <button
+        className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 hover:bg-blue-600 transition"
+        onClick={() => setShowChatbot(true)}
+        title="Ouvrir le chatbot"
+      >
+        <MessageCircle className="w-6 h-6" />
+      </button>
       <ToastContainer />
+      <Footer
+        onApropos={() => setShowApropos(true)}
+        onContact={() => setShowContact(true)}
+        onCarriere={() => setShowCarriere(true)}
+        setMentionType={setMentionType}
+      />
     </section>
   );
 }

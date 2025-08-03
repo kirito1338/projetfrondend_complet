@@ -8,7 +8,7 @@ import Navbar from "../src/componants/navbar";
 import { useNavigate } from "react-router-dom"; 
 import api from "./api";
 import MessageBox from "./componants/MessageBox";
-
+import Footer from "./componants/Footer";
 
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBo_o1KoYrdYgDbPkR2e0uwj5qrXUSeOwE";
@@ -30,6 +30,7 @@ const ConsulterTrajet = () => {
   const [showContact, setShowContact] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [messageBoxData, setMessageBoxData] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
 
   const navigate = useNavigate();
@@ -104,38 +105,31 @@ const handleReservation = async (trajetId) => {
 
  const filterTrajetsByDepart = async () => {
   setIsSearching(true);
+  setHasSearched(true);
 
-  const departCoordinates = await getCoordinates(addressDepart);
-  if (!departCoordinates) {
-    toast.error("Adresse de départ invalide.");
+  // Appel au backend pour récupérer les trajets proches
+  try {
+    const res = await api.post("/api/trajet/proches", { address: addressDepart });
+    setFilteredTrajets(res.data);
     setIsSearching(false);
-    return;
+    setAnimateCards(true);
+    setTimeout(() => setAnimateCards(false), 600);
+    if (res.data.length === 0) {
+      toast("Aucun trajet trouvé pour cette adresse.", {
+        icon: "😢",
+        style: {
+          borderRadius: "8px",
+          background: "#1e293b",
+          color: "#fff",
+          fontWeight: "500",
+          padding: "16px",
+        },
+      });
+    }
+  } catch (err) {
+    setIsSearching(false);
+    toast.error("Erreur lors de la recherche de trajets proches.");
   }
-
-  const filtered = trajets.filter(
-    (trajet) =>
-      trajet?.etat?.toLowerCase() === "ouvert" &&
-      trajet?.pointDepart?.toLowerCase().includes(addressDepart.toLowerCase())
-  );
-
-  if (filtered.length === 0) {
-    toast("Aucun trajet trouvé pour cette adresse.", {
-      icon: "😢",
-      style: {
-        borderRadius: "8px",
-        background: "#1e293b",
-        color: "#fff",
-        fontWeight: "500",
-        padding: "16px",
-      },
-    });
-  }
-
-  setFilteredTrajets(filtered);
-  setIsSearching(false);
-  setAnimateCards(true);
-
-  setTimeout(() => setAnimateCards(false), 600);
 };
 
 
@@ -493,42 +487,44 @@ const arrivee = trajet.pointArrivee;
         </div>
 
         {/* Results Section */}
-        {filteredTrajets.length > 0 && (
-          <div className="mb-12">
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/40 p-8 hover:bg-white/95 transition-all duration-300">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
-                <Route className="w-6 h-6 mr-3 text-green-600" />
-                Available Trips ({filteredTrajets.length})
-              </h3>
-              
-              <div className="space-y-4">
-                <select 
-                  onChange={handleTrajetSelection}
-                  className="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
-                >
-                  <option value="">Select a trip to view details</option>
-                  {filteredTrajets.map((trajet, index) => (
-                    <option key={index} value={index}>
-                      {trajet.pointDepart} → {trajet.pointArrivee} ({trajet.date} at {trajet.heureDepart})
-                    </option>
-                  ))}
-                </select>
-                
-                {filteredTrajets.length > 0 && (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
-                    {filteredTrajets.map((trajet, index) => (
-                      <div
-                        key={trajet.idTrajet || index}
-                        className={`p-6 border rounded-lg cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-102 ${
-                          selectedTrajet?.id === trajet.idTrajet 
-                            ? 'border-blue-500 bg-blue-50/80 backdrop-blur-sm shadow-lg scale-102' 
-                            : 'border-gray-200 bg-white/70 backdrop-blur-sm hover:border-gray-300 hover:bg-white/90'
-                        }`}
-                        onClick={() => {
-                          setSelectedTrajet(trajet);
-                          calculateRoute(trajet);
-                        }}
-                      >
+       {(hasSearched ? filteredTrajets : trajets).length > 0 && (
+  <div className="mb-12">
+    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/40 p-8 hover:bg-white/95 transition-all duration-300">
+      <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center">
+        <Route className="w-6 h-6 mr-3 text-green-600" />
+        {hasSearched
+          ? `Available Trips (${filteredTrajets.length})`
+          : `All Available Trips (${trajets.length})`}
+      </h3>
+      
+      <div className="space-y-4">
+        <select 
+          onChange={handleTrajetSelection}
+          className="w-full px-4 py-4 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+        >
+          <option value="">Select a trip to view details</option>
+          {(hasSearched ? filteredTrajets : trajets).map((trajet, index) => (
+            <option key={index} value={index}>
+              {trajet.pointDepart} → {trajet.pointArrivee} ({trajet.date} at {trajet.heureDepart})
+            </option>
+          ))}
+        </select>
+        
+        {(hasSearched ? filteredTrajets : trajets).length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
+            {(hasSearched ? filteredTrajets : trajets).map((trajet, index) => (
+              <div
+                key={trajet.idTrajet || index}
+                className={`p-6 border rounded-lg cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-102 ${
+                  selectedTrajet?.id === trajet.idTrajet 
+                    ? 'border-blue-500 bg-blue-50/80 backdrop-blur-sm shadow-lg scale-102' 
+                    : 'border-gray-200 bg-white/70 backdrop-blur-sm hover:border-gray-300 hover:bg-white/90'
+                }`}
+                onClick={() => {
+                  setSelectedTrajet(trajet);
+                  calculateRoute(trajet);
+                }}
+              >
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex items-center space-x-2">
                             <Car className="w-5 h-5 text-blue-600" />
@@ -755,6 +751,8 @@ const arrivee = trajet.pointArrivee;
 
       </div>
     </div>
+        <Footer />
+
             </>
   );
 };

@@ -78,12 +78,12 @@ export default function App() {
             path="/admin"
             element={
               user ? (
-                <AdminInterface onLogout={handleLogout} />
+                <AdminInterface user={user} onLogout={handleLogout} />
               ) : (
                 <Navigate to="/" />
               )
             }
-          />     
+          />
           <Route
             path="/mes-reservations"
             element={

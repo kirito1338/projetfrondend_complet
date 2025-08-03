@@ -6,6 +6,10 @@ import { jwtDecode } from "jwt-decode";
 
 export default function Login({ mode, onClose, onLoginSuccess }) {
   const navigate = useNavigate();
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [googleUserId, setGoogleUserId] = useState(null);
+  const [code, setCode] = useState("");
+
   const [role, setRole] = useState("student");
   const [currentMode, setCurrentMode] = useState(mode);
   const [formData, setFormData] = useState({
@@ -113,21 +117,25 @@ export default function Login({ mode, onClose, onLoginSuccess }) {
 
 const handleGoogleLogin = async (credentialResponse) => {
   const token = credentialResponse.credential;
-  const decoded = jwtDecode(token);
-  console.log("Google user decoded:", decoded);
   try {
     const res = await axios.post("http://localhost:8000/api/users/login/google", { token });
 
+    // Si le backend demande une vérification par code
+    if (res.data.need_code) {
+      setGoogleUserId(res.data.user_id);
+      setShowCodeInput(true);
+      setError(""); // reset error
+      return;
+    }
+
+    // Si c'est une inscription, ou si pas besoin de code
     const access_token = res.data.access_token;
     const user = res.data.user;
-
-    localStorage.setItem("token", access_token);               // ✅ fix ici
+    localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(user));
-
     handleLoginSuccess({ access_token, user });
     onClose();
   } catch (err) {
-    console.error("Erreur Google Login:", err);
     setError("Connexion Google échouée");
   }
 };
@@ -276,11 +284,8 @@ const handleGoogleLogin = async (credentialResponse) => {
             <span>Ou s'inscrire avec</span>
         <div className="flex justify-center gap-4 mt-2">
                  <GoogleLogin
-                    onSuccess={handleGoogleLogin}  // Utilisation de la fonction handleGoogleLogin
-                    onError={() => {
-                      console.log("Google Register échoué");
-                      setError("Échec de l'inscription avec Google");
-                    }}
+                    onSuccess={handleGoogleLogin}
+                    onError={() => setError("Échec de la connexion avec Google")}
                   />
         </div>
       </div>
@@ -358,6 +363,59 @@ const handleGoogleLogin = async (credentialResponse) => {
           Retour à l'accueil
         </p>
       </div>
+      {showCodeInput && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+    <div className="bg-white p-6 rounded-xl shadow-xl max-w-xs w-full">
+      <h3 className="text-lg font-bold mb-2 text-green-700">Vérification Google</h3>
+      <p className="mb-4 text-sm text-gray-600">
+        Un code de connexion a été envoyé à votre email.<br />
+        Veuillez le saisir ci-dessous.
+      </p>
+      <input
+        type="text"
+        className="w-full mb-4 p-2 border rounded text-center"
+        placeholder="Code à 6 chiffres"
+        value={code}
+        onChange={e => setCode(e.target.value)}
+        maxLength={6}
+      />
+      <button
+        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded"
+        onClick={async () => {
+          try {
+            const res = await axios.post("http://localhost:8000/api/users/login/google/verify-code", {
+              user_id: googleUserId,
+              code,
+            });
+            const access_token = res.data.access_token;
+            const user = res.data.user;
+            localStorage.setItem("token", access_token);
+            localStorage.setItem("user", JSON.stringify(user));
+            handleLoginSuccess({ access_token, user });
+            setShowCodeInput(false);
+            setCode("");
+            setGoogleUserId(null);
+            onClose();
+          } catch (err) {
+            setError("Code invalide ou expiré");
+          }
+        }}
+      >
+        Valider le code
+      </button>
+      <button
+        className="w-full mt-2 text-sm text-gray-500 hover:text-red-500"
+        onClick={() => {
+          setShowCodeInput(false);
+          setCode("");
+          setGoogleUserId(null);
+        }}
+      >
+        Annuler
+      </button>
+    </div>
+  </div>
+)}
     </section>
   );
 }

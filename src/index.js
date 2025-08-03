@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { LangProvider } from "./LangContext"; // <-- Ajoute ceci
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
@@ -12,7 +13,9 @@ const GOOGLE_CLIENT_ID = "828167926576-hvs3ra6hv9vle7pts85plplda9ir04ps.apps.goo
 root.render(
   <React.StrictMode>
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <App />
+      <LangProvider> {/* <-- Ajoute ce provider ici */}
+        <App />
+      </LangProvider>
     </GoogleOAuthProvider>
   </React.StrictMode>
 );
