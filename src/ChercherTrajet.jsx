@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";  // <-- Import pour la navigation
+import { useNavigate } from "react-router-dom"; 
 
 export default function ChercherTrajet() {
-  const [trajets, setTrajets] = useState([]); // Initialise comme tableau
+  const [trajets, setTrajets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();  // <-- Hook de navigation
+  const navigate = useNavigate(); 
 
   useEffect(() => {
-    fetch("http://localhost:8000/rides/all") // Adapte l'URL si besoin
+    fetch("http://localhost:8000/rides/all") 
       .then((res) => {
         if (!res.ok) throw new Error("Erreur HTTP " + res.status);
         return res.json();
@@ -56,7 +56,7 @@ export default function ChercherTrajet() {
           </div>
           <div className="space-x-2">
             <button
-              onClick={() => navigate(`/consulter-trajet/${t.id}`)}  // <-- Redirection vers la page des détails du trajet
+              onClick={() => navigate(`/consulter-trajet/${t.id}`)}  
               className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
             >
               Voir les détails

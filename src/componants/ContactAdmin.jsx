@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Send } from "lucide-react";
-import api from "../api"; // Assure-toi que ce chemin est correct
+import api from "../api";
 
 const ContactAdmin = ({ onClose }) => {
   const [message, setMessage] = useState("");
@@ -38,7 +38,7 @@ const ContactAdmin = ({ onClose }) => {
         </p>
         {sent ? (
           <div className="text-center text-green-700 font-semibold text-lg py-8">
-            ✅ Message envoyé avec succès !<br />Merci pour ton retour.
+             Message envoyé avec succès !<br />Merci pour ton retour.
           </div>
         ) : (
           <form onSubmit={handleSend} className="space-y-4">

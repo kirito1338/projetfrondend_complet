@@ -18,9 +18,9 @@ export default function CustomToastContainer() {
       pauseOnHover
       theme="dark"
       toastStyle={{
-        background: "rgba(30, 41, 59, 0.75)", // bg-slate-800 semi-transparent
+        background: "rgba(30, 41, 59, 0.75)", 
         color: "#ffffff",
-        backdropFilter: "blur(10px)",         // flou en arrière-plan
+        backdropFilter: "blur(10px)",      
         borderRadius: "12px",
         boxShadow: "0 4px 12px rgba(0, 0, 0, 0.25)",
         border: "1px solid rgba(255, 255, 255, 0.1)",

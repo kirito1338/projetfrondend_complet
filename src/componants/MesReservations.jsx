@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLang } from "../LangContext";
 import api from "../api";
 import MessageBox from "../componants/MessageBox";
 import { Send, Trash2, Star } from "lucide-react";
@@ -6,8 +8,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 import { GoogleMap, DirectionsService, DirectionsRenderer, useJsApiLoader } from "@react-google-maps/api";
 import { motion } from "framer-motion";
 import Spline from "@splinetool/react-spline";
-import Navbar from "./navbar"; // Ajout Navbar
-import Footer from "./Footer"; // Ajout Footer
+import Navbar from "./navbar"; 
+import Footer from "./Footer"; 
 
 const containerStyle = {
   width: "100%",
@@ -15,10 +17,12 @@ const containerStyle = {
 };
 
 const MesReservations = () => {
+  const navigate = useNavigate();
+  const { t } = useLang();
   const [reservations, setReservations] = useState([]);
   const [messageBoxData, setMessageBoxData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [directions, setDirections] = useState({}); // trajet.idTrajet => directions
+  const [directions, setDirections] = useState({}); 
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showApropos, setShowApropos] = useState(false);
@@ -26,14 +30,13 @@ const MesReservations = () => {
 
   // Chargement de l'API Google Maps
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyBo_o1KoYrdYgDbPkR2e0uwj5qrXUSeOwE", // Remplace par ta clé
+    googleMapsApiKey: "AIzaSyBo_o1KoYrdYgDbPkR2e0uwj5qrXUSeOwE",
   });
 
  const noterTrajet = async (trajetId, note) => {
   try {
     await api.post(`/api/passager/noter-trajet/${trajetId}`, { note });
     alert("Note envoyée avec succès !");
-    // Met à jour la note localement pour affichage immédiat
     setReservations((prev) =>
       prev.map((t) =>
         t.idTrajet === trajetId ? { ...t, note } : t
@@ -49,6 +52,13 @@ useEffect(() => {
   if (userData) setUser(JSON.parse(userData));
 }, []);
 
+const handleLogout = () => {
+  setUser(null);
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+  navigate("/"); 
+};
+
 const supprimerHistorique = async (idTrajet) => {
   if (!window.confirm("Supprimer ce trajet de l'historique ?")) return;
   try {
@@ -63,7 +73,6 @@ const supprimerHistorique = async (idTrajet) => {
 
 const confirmerUtilisation = async (trajetId) => {
   try {
-    // Appelle ton endpoint pour confirmer l'utilisation du trajet
     await api.post(`/api/passager/confirmer-utilisation/${trajetId}`);
     setReservations((prev) =>
       prev.map((t) =>
@@ -77,7 +86,6 @@ const confirmerUtilisation = async (trajetId) => {
   }
 };
 
-  // Chargement des réservations
   const fetchReservations = async () => {
     try {
       const res = await api.get("/api/passager/mes-reservations");
@@ -89,7 +97,6 @@ const confirmerUtilisation = async (trajetId) => {
     }
   };
 
-  // Annulation d'une réservation
   const annulerReservation = async (idTrajet) => {
     if (!window.confirm("Confirmer l'annulation de ce trajet ?")) return;
     try {
@@ -102,7 +109,6 @@ const confirmerUtilisation = async (trajetId) => {
     }
   };
 
-  // Callback pour récupérer les directions
   const handleDirectionsCallback = (trajetId, result, status) => {
     if (status === "OK") {
       setDirections((prev) => ({ ...prev, [trajetId]: result }));
@@ -111,7 +117,6 @@ const confirmerUtilisation = async (trajetId) => {
     }
   };
 
-  // Chargement initial des réservations
   useEffect(() => {
     fetchReservations();
   }, []);
@@ -120,7 +125,7 @@ const confirmerUtilisation = async (trajetId) => {
 <>
       <Navbar
         user={user}
-        handleLogout={() => { setUser(null); }}
+        handleLogout={handleLogout}
         setShowLogin={setShowLogin}
         setShowApropos={setShowApropos}
         setShowContact={setShowContact}
@@ -140,13 +145,13 @@ const confirmerUtilisation = async (trajetId) => {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 100 }}
         >
-          🌟 Mes Réservations 🔥
+          🌟 {t("mesReservations")} 🔥
         </motion.h2>
 
         {loading ? (
-          <div className="text-gray-500">Chargement en cours...</div>
+          <div className="text-gray-500">{t("chargement")}</div>
         ) : reservations.length === 0 ? (
-          <div className="text-gray-500 text-center">Aucune réservation trouvée.</div>
+          <div className="text-gray-500 text-center">{t("aucuneReservation")}</div>
         ) : (
           <div className="space-y-8">
             {reservations.map((trajet, index) => (
@@ -244,7 +249,7 @@ const confirmerUtilisation = async (trajetId) => {
   <div className="mt-4 rounded overflow-hidden border">
     <GoogleMap
       mapContainerStyle={containerStyle}
-      center={{ lat: 45.5017, lng: -73.5673 }} // Montréal par défaut
+      center={{ lat: 45.5017, lng: -73.5673 }} 
       zoom={10}
     >
       {!directions[trajet.idTrajet] && (

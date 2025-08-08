@@ -9,7 +9,6 @@ const Carriere = ({ onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Ici tu pourrais envoyer les infos à une API ou un email
     setSubmitted(true);
   };
 

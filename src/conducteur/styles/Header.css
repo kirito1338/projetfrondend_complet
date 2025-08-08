@@ -1,0 +1,272 @@
+/* Styles pour Header du conducteur */
+
+/* Header principal */
+.conductor-header {
+  position: relative;
+}
+
+.header-background {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(32px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+}
+
+/* Logo section */
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-container {
+  position: relative;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #22d3ee, #3b82f6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px rgba(34, 211, 238, 0.15);
+  animation: pulse 2s infinite;
+  font-size: 1.5rem;
+}
+
+.logo-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #22d3ee, #3b82f6);
+  border-radius: 50%;
+  filter: blur(16px);
+  opacity: 0.3;
+  animation: ping 2s infinite;
+}
+
+.logo-text {
+  font-size: 1.875rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #22d3ee, #3b82f6, #8b5cf6);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.07));
+}
+
+/* Navigation */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-button {
+  position: relative;
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-weight: bold;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  transform-origin: center;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.nav-button:hover {
+  transform: scale(1.05);
+}
+
+.nav-button-active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.nav-button-inactive {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.nav-button-inactive:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Effet de lueur pour les boutons */
+.nav-button-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  filter: blur(4px);
+}
+
+.nav-button:hover .nav-button-glow {
+  opacity: 0.2;
+}
+
+/* Gradients pour chaque section */
+.nav-glow-accueil {
+  background: linear-gradient(135deg, #22d3ee, #3b82f6);
+}
+
+.nav-glow-proposer {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.nav-glow-trajets {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+}
+
+.nav-glow-messages {
+  background: linear-gradient(135deg, #fb923c, #ef4444);
+}
+
+.nav-glow-parametres {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+/* Indicateur actif */
+.active-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  animation: pulse 2s infinite;
+}
+
+/* Bouton de déconnexion */
+.logout-button {
+  position: relative;
+  margin-left: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ef4444, #ec4899);
+  color: white;
+  font-weight: bold;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15);
+  transition: all 0.3s ease;
+  transform-origin: center;
+  cursor: pointer;
+  border: none;
+}
+
+.logout-button:hover {
+  box-shadow: 0 15px 35px rgba(239, 68, 68, 0.25);
+  transform: scale(1.05) translateY(-2px);
+}
+
+.logout-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #ef4444, #ec4899);
+  border-radius: 16px;
+  filter: blur(16px);
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.logout-button:hover .logout-glow {
+  opacity: 0.6;
+}
+
+.logout-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ligne de séparation animée */
+.header-separator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #22d3ee, #3b82f6, #8b5cf6);
+  opacity: 0.6;
+  animation: pulse 3s infinite;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  75%, 100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .header-container {
+    padding: 16px 24px;
+  }
+  
+  .nav-button {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  .logo-text {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+  
+  .header-nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+  
+  .nav-button {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .logout-button {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

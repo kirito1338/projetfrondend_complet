@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Accueil from './Accueil';
-import Login from './Login';
+import Login from './auth/Login';
 import CarteTrajets from './CarteTrajets';
 import ChercherTrajet from './ChercherTrajet';
-import ConsulterTrajet from './ConsulterTrajet';
-import ConducteurPage from './Conducteur'; // ✅ à créer
-import AdminPage from './AdminInterface'; // ✅ à créer
-import Conducteur from './Conducteur';
-import AdminInterface from './AdminInterface';
+import ConsulterTrajet from './consultertrajets/ConsulterTrajet';
+import AdminInterface from './admin/AdminInterface';
+import Conducteur from './conducteur/Conducteur';
 import { Toaster } from 'react-hot-toast';
 import MesReservations from './componants/MesReservations';
+import Chatbot from './componants/chatbot';
+import { MessageCircle } from 'lucide-react';
 
 
 
@@ -19,6 +19,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loginMode, setLoginMode] = useState('login');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
 
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function App() {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    setShowLogin(false);
   }, []);
 
   const handleLoginSuccess = (userData) => {
@@ -75,29 +77,71 @@ export default function App() {
           <Route path="/trajets" element={<ConsulterTrajet />} />
           <Route path="/conducteur" element={<Conducteur />} /> {/* ✅ */}
           <Route
-            path="/admin"
+            path="/admininterface"
             element={
               user ? (
                 <AdminInterface user={user} onLogout={handleLogout} />
               ) : (
-                <Navigate to="/" />
+                <Accueil
+                  user={user}
+                  onLogout={handleLogout}
+                  onLoginClick={() => setShowLogin(true)}
+                  showNotifications={showNotifications}
+                  setShowNotifications={setShowNotifications}
+                />
               )
             }
           />
           <Route
             path="/mes-reservations"
             element={
-              user && user.role === 'passager' || "student" ? (
+              user && (
+                user.role === 'passager' || 
+                user.role === 'student' || 
+                user.role_user === 'passager' || 
+                user.role_user === 'student'
+              ) ? (
                 <MesReservations user={user} />
               ) : (
-                <Navigate to="/" />
+                <Accueil
+                  user={user}
+                  onLogout={handleLogout}
+                  onLoginClick={() => setShowLogin(true)}
+                  showNotifications={showNotifications}
+                  setShowNotifications={setShowNotifications}
+                />
               )
             }
           />
 
 
-     <Route path="*" element={<Navigate to="/" />} />
+     <Route 
+            path="*" 
+            element={
+              <Accueil
+                user={user}
+                onLogout={handleLogout}
+                onLoginClick={() => setShowLogin(true)}
+                showNotifications={showNotifications}
+                setShowNotifications={setShowNotifications}
+              />
+            } 
+          />
         </Routes>
+
+        {showChatbot && (
+          <Chatbot onClose={() => setShowChatbot(false)} />
+        )}
+
+        {!showChatbot && (
+          <button
+            onClick={() => setShowChatbot(true)}
+            className="fixed bottom-8 right-8 z-40 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110"
+            title="Ouvrir le chatbot"
+          >
+            <MessageCircle className="w-6 h-6" />
+          </button>
+        )}
       </div>
     </Router>
   );

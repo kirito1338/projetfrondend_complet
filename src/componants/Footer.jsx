@@ -5,8 +5,7 @@ import emailjs from "@emailjs/browser";
 function Footer({ onApropos, onContact,setMentionType, onCarriere }) {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterMsg, setNewsletterMsg] = useState("");
-
-  // Remplace par tes propres valeurs EmailJS
+  //emailJs
   const SERVICE_ID = "service_4sx33jn";
   const TEMPLATE_ID = "template_2vlovks";
   const PUBLIC_KEY = "kYNg3fGtO-rwkqvZf";
@@ -32,10 +31,8 @@ function Footer({ onApropos, onContact,setMentionType, onCarriere }) {
   };
   return (
   <footer className="bg-gradient-to-br from-gray-900 via-gray-950 to-gray-800 text-white relative z-30 mt-16 overflow-hidden">
-    {/* Animated Gradient Blobs */}
     <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 opacity-20 rounded-full filter blur-3xl animate-blob1"></div>
     <div className="pointer-events-none absolute -bottom-32 -right-32 w-96 h-96 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-400 opacity-20 rounded-full filter blur-3xl animate-blob2"></div>
-    {/* Noise Texture */}
     <div className="pointer-events-none absolute inset-0 opacity-10" style={{
       backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
     }}></div>
@@ -48,7 +45,7 @@ function Footer({ onApropos, onContact,setMentionType, onCarriere }) {
             <li><a href="#" className="hover:text-green-400 transition-colors">Nouveautés</a></li>
           </ul>
         </div>
-        {/* Section À PROPOS DE NOUS */}
+        {/* Section A PROPOS DE NOUS */}
         <div>
           <h3 className="text-lg font-bold mb-4 text-green-400 tracking-widest">À PROPOS DE NOUS</h3>
           <ul className="space-y-2 text-base">
@@ -102,7 +99,7 @@ function Footer({ onApropos, onContact,setMentionType, onCarriere }) {
             <li><a href="#" className="hover:text-green-400 transition-colors">Concours</a></li>
           </ul>
         </div>
-        {/* Section Newsletter et Réseaux sociaux */}
+        {/* Section Newsletter et reseaux sociaux */}
         <div>
           <h3 className="text-lg font-bold mb-4 text-green-400 tracking-widest">NEWSLETTER</h3>
           <p className="text-gray-300 mb-4">Restez informé de nos dernières news</p>
@@ -126,7 +123,7 @@ function Footer({ onApropos, onContact,setMentionType, onCarriere }) {
                 <div className="mt-2 text-sm text-green-400">{newsletterMsg}</div>
               )}
           </form>
-          {/* Réseaux sociaux */}
+          {/* reseaux sociaux */}
           <div>
             <h4 className="text-sm font-semibold mb-3 text-gray-300">SUIVEZ-NOUS</h4>
             <div className="flex space-x-4">
@@ -143,14 +140,14 @@ function Footer({ onApropos, onContact,setMentionType, onCarriere }) {
           </div>
         </div>
       </div>
-      {/* Mentions légales */}
+      {/* Mentions legales */}
       <div className="border-t border-gray-800 mt-12 pt-8">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center gap-3 mb-4 md:mb-0">
             <span className="inline-block w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full shadow-lg flex items-center justify-center text-white font-bold text-xl animate-pulse-glow">
               🚗
             </span>
-            <span className="text-lg font-semibold tracking-wide">Covoiturage Pro</span>
+            <span className="text-lg font-semibold tracking-wide">VroomVroom</span>
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
           <a href="#" onClick={() => setMentionType("cgu")} className="text-gray-400 hover:text-green-400 transition-colors">Conditions générales</a>

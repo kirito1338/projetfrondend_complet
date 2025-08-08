@@ -5,6 +5,7 @@ import api from "../api";
 const MessageBox = ({ message, onClose }) => {
   const [reply, setReply] = useState("");
   const [conversation, setConversation] = useState([]);
+  const [expediteurName, setExpediteurName] = useState("");
   const isReplyable = !!message?.idExpediteur;
 
   const getCurrentUserId = () => {
@@ -23,10 +24,25 @@ const MessageBox = ({ message, onClose }) => {
   useEffect(() => {
     const fetchConversation = async () => {
       try {
+        if (message.expediteurName) {
+          setExpediteurName(message.expediteurName);
+        } else if (message.nomExpediteur) {
+          setExpediteurName(message.nomExpediteur);
+        } else if (message.idExpediteur) {
+          try {
+            const userRes = await api.get(`/api/users/${message.idExpediteur}`);
+            const userName = userRes.data.prenom || userRes.data.nom || userRes.data.email || `Utilisateur ${message.idExpediteur}`;
+            setExpediteurName(userName);
+          } catch (err) {
+            console.error("Erreur récupération nom expéditeur:", err);
+            setExpediteurName(`Utilisateur ${message.idExpediteur}`);
+          }
+        }
+
         const res = await api.get(`/api/messages/with/${message.idExpediteur}`);
         const mapped = res.data.map((msg) => ({
           ...msg,
-          estMoi: msg.id_expediteur === currentUserId,
+          estMoi: msg.idExpediteur === currentUserId,
         }));
         setConversation(mapped);
       } catch (err) {
@@ -34,9 +50,12 @@ const MessageBox = ({ message, onClose }) => {
       }
     };
 
+    let interval;
     if (isReplyable && currentUserId) {
       fetchConversation();
+      interval = setInterval(fetchConversation, 2000);
     }
+    return () => interval && clearInterval(interval);
   }, [message]);
 
   const handleReply = async () => {
@@ -52,7 +71,7 @@ const MessageBox = ({ message, onClose }) => {
       const res = await api.get(`/api/messages/with/${message.idExpediteur}`);
       const mapped = res.data.map((msg) => ({
         ...msg,
-        estMoi: msg.id_expediteur === currentUserId,
+        estMoi: msg.idExpediteur === currentUserId,
       }));
       setConversation(mapped);
     } catch (err) {
@@ -67,14 +86,14 @@ const MessageBox = ({ message, onClose }) => {
     <div className="fixed bottom-4 right-4 w-96 bg-white shadow-lg border rounded-lg p-4 z-[9999] max-h-[80vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-bold text-green-700">
-          Discussion avec utilisateur {message.idExpediteur}
+          Discussion avec {expediteurName || `Utilisateur ${message.idExpediteur}`}
         </h3>
         <button onClick={onClose} className="text-gray-500 hover:text-red-500">
           <X />
         </button>
       </div>
 
-      {/* ✅ Conversation */}
+      {/* Conversation */}
       <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
         {conversation.map((msg, idx) => (
           <div
@@ -87,13 +106,13 @@ const MessageBox = ({ message, onClose }) => {
           >
             <div>{msg.contenu}</div>
             <div className="text-xs text-gray-500">
-              {new Date(msg.date_envoi).toLocaleString()}
+              {new Date(msg.dateEnvoi).toLocaleString()}
             </div>
           </div>
         ))}
       </div>
 
-      {/* ✅ Réponse */}
+      {/* Réponse */}
       <textarea
         className="w-full p-2 border rounded text-sm"
         placeholder="Votre réponse..."

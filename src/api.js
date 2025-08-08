@@ -4,10 +4,9 @@ const api = axios.create({
   baseURL: "http://localhost:8000",
 });
 
-// Ajout automatique du token à chaque requête
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token"); // ou AsyncStorage.getItem si tu es en React Native
+    const token = localStorage.getItem("token"); 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

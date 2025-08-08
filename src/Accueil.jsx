@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import Login from "./Login";
-import AdminInterface from "./AdminInterface";
-import Conducteur from "./Conducteur";
+import Login from "./auth/Login";
+import AdminInterface from "./admin/AdminInterface";
+import Conducteur from "./conducteur/Conducteur";
 import CarteTrajets from "./CarteTrajets";
 import api from "./api";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +15,7 @@ import APropos from "./componants/APropos";
 import ContactAdmin from "./componants/ContactAdmin";
 import Carriere from "./componants/Carriere";
 import MentionsLegalesModal from "./componants/MentionsLegalesModal";
-import { useLang } from "./LangContext"; // <-- Ajoute ceci
+import { useLang } from "./LangContext"; 
 
 export default function Accueil() {
   const navigate = useNavigate();
@@ -31,13 +31,30 @@ export default function Accueil() {
   const [showChatbot, setShowChatbot] = useState(false);
   const [showCarriere, setShowCarriere] = useState(false);
   const [mentionType, setMentionType] = useState(null);
-  const { t } = useLang(); // <-- Appelle le hook ici
+  const { t } = useLang(); 
+  const handleHomeClick = () => {
+    setShowApropos(false);
+    setShowContact(false);
+    setShowAdmin(false);
+    setShowConducteur(false);
+    setShowLogin(false);
+    setShowCarriere(false);
+    setMentionType(null);
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    
+    setShowLogin(false);
+    setShowApropos(false);
+    setShowContact(false);
+    setShowAdmin(false);
+    setShowConducteur(false);
+    setShowCarriere(false);
+    setMentionType(null);
 
     let index = 0;
     const fullTitle = "Plateforme de Covoiturage Étudiant";
@@ -58,10 +75,22 @@ export default function Accueil() {
     else if (userData.role === "driver") setShowConducteur(true);
 
     try {
+      let userId = userData.id_user || userData.user?.id_user;
+      if (!userId) {
+        const userRes = await api.get('/api/users/me');
+        userId = userRes.data.id_user;
+        setUser({ ...userData, ...userRes.data });
+      }
+
+      if (!userId) {
+        console.warn("Impossible de récupérer l'ID utilisateur");
+        return;
+      }
+
       const [notifRes, progRes, msgRes] = await Promise.all([
-        api.get(`/api/notifications/user/${userData.id_user}`),
-        api.get(`/api/messages_programmes/user/${userData.id_user}`),
-        api.get(`/api/messages/received/${userData.id_user}`),
+        api.get(`/api/notifications/user/${userId}`),
+        api.get(`/api/messages_programmes/user/${userId}`),
+        api.get(`/api/messages/received/${userId}`),
       ]);
 
       const allItems = [
@@ -146,6 +175,7 @@ export default function Accueil() {
         showContact={showContact}
         showNotifications={showNotifications}
         setShowNotifications={setShowNotifications}
+        onHomeClick={handleHomeClick}
       />
 
       <div className="absolute inset-x-0 top-[64px] bottom-0 z-0">
@@ -177,7 +207,7 @@ export default function Accueil() {
                 onClick={() => navigate("/trajets")}
                 className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md font-semibold"
               >
-                Voir les trajets
+                {t("rechercherTrajet")}
               </button>
             ) : (
               <button
@@ -187,7 +217,7 @@ export default function Accueil() {
                 }}
                 className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md font-semibold"
               >
-                Rejoindre un trajet
+                {t("rechercherTrajet")}
               </button>
             )}
             {(!user || user.role === "driver") && (
@@ -199,7 +229,7 @@ export default function Accueil() {
                 }}
                 className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-3 rounded-md font-semibold border border-white"
               >
-                {user ? "Proposer un trajet" : "Devenir conducteur"}
+                {user ? t("proposerTrajet") : t("devenirConducteur")}
               </button>
             )}
           </div>
@@ -207,7 +237,7 @@ export default function Accueil() {
 
         <div className="mt-12 md:mt-0 bg-black bg-opacity-50 backdrop-blur-md p-6 rounded-xl shadow-lg text-white w-full max-w-sm space-y-4">
           <h2 className="text-xl font-semibold border-b border-gray-500 pb-2 mb-2">
-            Pourquoi nous choisir ?
+            {t("pourquoiChoisir")}
           </h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex flex-col items-center">
@@ -259,7 +289,7 @@ export default function Accueil() {
       <button
         className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50 hover:bg-blue-600 transition"
         onClick={() => setShowChatbot(true)}
-        title="Ouvrir le chatbot"
+        title={t("ouvrirChatbot")}
       >
         <MessageCircle className="w-6 h-6" />
       </button>

@@ -1,0 +1,196 @@
+/* Conducteur Styles - Main CSS Import File */
+
+/* Base Styles */
+@import './Conducteur.css';
+
+/* Component Styles */
+@import './Header.css';
+@import './ConversationModal.css';
+@import './Messages.css';
+@import './SuccessToast.css';
+
+/* Page Styles */
+@import './Dashboard.css';
+@import './ProposerTrajet.css';
+@import './MesTrajets.css';
+@import './Parametres.css';
+
+/* Global Conducteur Variables */
+:root {
+  /* Primary Colors */
+  --conducteur-primary-cyan: #22d3ee;
+  --conducteur-primary-blue: #3b82f6;
+  --conducteur-primary-purple: #a855f7;
+  --conducteur-primary-green: #22c55e;
+  --conducteur-primary-orange: #f97316;
+  --conducteur-primary-red: #ef4444;
+  
+  /* Glass Effect Variables */
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-backdrop: blur(16px);
+  
+  /* Shadow Variables */
+  --shadow-primary: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  --shadow-glow-cyan: 0 0 20px rgba(34, 211, 238, 0.3);
+  --shadow-glow-purple: 0 0 20px rgba(168, 85, 247, 0.3);
+  --shadow-glow-green: 0 0 20px rgba(34, 197, 94, 0.3);
+  
+  /* Transition Variables */
+  --transition-fast: 0.3s ease;
+  --transition-medium: 0.5s ease;
+  --transition-slow: 1s ease;
+  --transition-bounce: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  /* Border Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+}
+
+/* Global Utility Classes for Conducteur */
+.conducteur-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+}
+
+.conducteur-shadow {
+  box-shadow: var(--shadow-primary);
+}
+
+.conducteur-transition {
+  transition: var(--transition-medium);
+}
+
+.conducteur-hover-lift:hover {
+  transform: translateY(-5px);
+}
+
+.conducteur-hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.conducteur-glow-cyan {
+  box-shadow: var(--shadow-glow-cyan);
+}
+
+.conducteur-glow-purple {
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.conducteur-glow-green {
+  box-shadow: var(--shadow-glow-green);
+}
+
+/* Text Gradient Utilities */
+.conducteur-text-gradient-cyan {
+  background: linear-gradient(135deg, var(--conducteur-primary-cyan), var(--conducteur-primary-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.conducteur-text-gradient-purple {
+  background: linear-gradient(135deg, var(--conducteur-primary-purple), #ec4899);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.conducteur-text-gradient-green {
+  background: linear-gradient(135deg, var(--conducteur-primary-green), #10b981);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Button Utilities */
+.conducteur-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  position: relative;
+  overflow: hidden;
+}
+
+.conducteur-btn:hover {
+  transform: scale(1.05) translateY(-2px);
+}
+
+.conducteur-btn-primary {
+  background: linear-gradient(135deg, var(--conducteur-primary-cyan), var(--conducteur-primary-blue));
+  color: white;
+  box-shadow: 0 10px 25px rgba(34, 211, 238, 0.25);
+}
+
+.conducteur-btn-primary:hover {
+  box-shadow: 0 15px 30px rgba(34, 211, 238, 0.4);
+}
+
+.conducteur-btn-success {
+  background: linear-gradient(135deg, var(--conducteur-primary-green), #10b981);
+  color: white;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.25);
+}
+
+.conducteur-btn-success:hover {
+  box-shadow: 0 15px 30px rgba(34, 197, 94, 0.4);
+}
+
+.conducteur-btn-warning {
+  background: linear-gradient(135deg, #eab308, var(--conducteur-primary-orange));
+  color: white;
+  box-shadow: 0 10px 25px rgba(234, 179, 8, 0.25);
+}
+
+.conducteur-btn-warning:hover {
+  box-shadow: 0 15px 30px rgba(234, 179, 8, 0.4);
+}
+
+.conducteur-btn-danger {
+  background: linear-gradient(135deg, var(--conducteur-primary-red), #dc2626);
+  color: white;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.25);
+}
+
+.conducteur-btn-danger:hover {
+  box-shadow: 0 15px 30px rgba(239, 68, 68, 0.4);
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  :root {
+    --spacing-xs: 0.375rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
+    --spacing-xl: 1.5rem;
+  }
+}

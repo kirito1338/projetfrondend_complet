@@ -2,7 +2,6 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// Fix icônes manquantes dans Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -12,7 +11,7 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function CarteTrajets() {
-  const center = [45.5017, -73.5673]; // Centre Montréal
+  const center = [45.5017, -73.5673]; 
   const points = [
     { ville: "Montréal", coords: [45.5017, -73.5673] },
     { ville: "Laval", coords: [45.6066, -73.7124] },

@@ -1,0 +1,183 @@
+/* Styles pour ConversationModal */
+
+/* Modal backdrop */
+.conversation-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+/* Modal container */
+.conversation-modal {
+  background: white;
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+}
+
+/* Modal header */
+.conversation-modal-header {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1d4ed8;
+  margin-bottom: 8px;
+}
+
+/* Conversation container */
+.conversation-container {
+  height: 16rem;
+  overflow-y: auto;
+  border: 1px solid #d1d5db;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+/* Message bubbles */
+.message-bubble {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  max-width: 80%;
+}
+
+.message-bubble-sent {
+  background: #dbeafe;
+  margin-left: auto;
+  text-align: right;
+}
+
+.message-bubble-received {
+  background: #e5e7eb;
+}
+
+.message-sender {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.message-content {
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Empty state */
+.conversation-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 32px 0;
+}
+
+/* Input area */
+.conversation-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.conversation-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Modal actions */
+.conversation-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.conversation-close-btn {
+  color: #4b5563;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.conversation-close-btn:hover {
+  text-decoration: underline;
+  background: #f3f4f6;
+}
+
+.conversation-send-btn {
+  background: #2563eb;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.conversation-send-btn:hover {
+  background: #1d4ed8;
+}
+
+.conversation-send-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Scrollbar personnalisée pour la conversation */
+.conversation-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.conversation-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.conversation-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .conversation-modal {
+    margin: 16px;
+    max-width: calc(100% - 32px);
+  }
+  
+  .conversation-container {
+    height: 12rem;
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+    font-size: 0.8rem;
+  }
+}

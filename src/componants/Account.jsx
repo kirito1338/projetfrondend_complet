@@ -16,7 +16,6 @@ export default function Account({ user, onUpdate }) {
   const handleSave = () => {
     setEdit(false);
     if (onUpdate) onUpdate(form);
-    // Ajoute ici un appel API si tu veux sauvegarder côté serveur
   };
 
   return (
